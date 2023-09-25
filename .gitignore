@@ -1,0 +1,8 @@
+.env
+.air.conf
+/key.json
+tmp/
+schema/
+media/
+scraping/
+/*.go
