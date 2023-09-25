@@ -8,15 +8,16 @@ import (
 
 type ComplaintsService struct {
 	repo repository.Complaints
-
-	playgrounds Playgrounds
 }
 
-func NewComplaintsService(repo repository.Complaints, playgrounds Playgrounds) *ComplaintsService {
+func NewComplaintsService(repo repository.Complaints) *ComplaintsService {
 	return &ComplaintsService{
-		repo:        repo,
-		playgrounds: playgrounds,
+		repo: repo,
 	}
+}
+
+func (c *ComplaintsService) GetEarly(ctx context.Context) ([]domain.Complaint, error) {
+	return c.repo.GetEarly(ctx)
 }
 
 func (c *ComplaintsService) Get(ctx context.Context, complaintId any) (domain.Complaint, error) {
@@ -24,31 +25,9 @@ func (c *ComplaintsService) Get(ctx context.Context, complaintId any) (domain.Co
 }
 
 func (c *ComplaintsService) Create(ctx context.Context, complaint *domain.Complaint) error {
-	if err := c.repo.Create(ctx, complaint); err != nil {
-		return err
-	}
-
-	complaints, err := c.repo.GetEarly(ctx)
-	if err != nil {
-		return err
-	}
-
-	c.playgrounds.UpdatePlaygroundsMap(complaints)
-
-	return nil
+	return c.repo.Create(ctx, complaint)
 }
 
 func (c *ComplaintsService) Delete(ctx context.Context, complaintId any) error {
-	if err := c.repo.Delete(ctx, complaintId); err != nil {
-		return err
-	}
-
-	complaints, err := c.repo.GetEarly(ctx)
-	if err != nil {
-		return err
-	}
-
-	c.playgrounds.UpdatePlaygroundsMap(complaints)
-
-	return nil
+	return c.repo.Delete(ctx, complaintId)
 }

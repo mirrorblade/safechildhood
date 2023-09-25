@@ -5,7 +5,7 @@ import (
 	"safechildhood/internal/app/domain"
 	"safechildhood/internal/app/repository/postgre"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Complaints interface {
@@ -19,8 +19,8 @@ type Repository struct {
 	Complaints
 }
 
-func New(conn *pgx.Conn) *Repository {
+func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{
-		Complaints: postgre.NewComplaints(conn),
+		Complaints: postgre.NewComplaints(pool),
 	}
 }

@@ -128,33 +128,33 @@ func (h *Handler) createComplaint(c *gin.Context) {
 	complaint.Description = h.textSanitazer.Sanitize(bodyComplaint.Description)
 	complaint.CreatedAt = time.Now()
 
-	folderId := h.service.GetSavedFolderId(bodyComplaint.Coordinates)
-	if folderId == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "bad request",
-			"body":    nil,
-		})
-
-		return
-	}
-
-	complaintDir, err := h.service.Storage.Create(c.Request.Context(), storage.GoogleDriveParameters{
-		Name:       id.String(),
-		ObjectMode: storage.FOLDER,
-		ParentId:   folderId,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": "server error",
-			"body":    nil,
-		})
-
-		return
-	}
-
 	if len(bodyComplaint.Photos) != 0 {
+		folderId := h.service.GetSavedFolderId(bodyComplaint.Coordinates)
+		if folderId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    http.StatusBadRequest,
+				"message": "bad request",
+				"body":    nil,
+			})
+
+			return
+		}
+
+		complaintDir, err := h.service.Storage.Create(c.Request.Context(), storage.GoogleDriveParameters{
+			Name:       id.String(),
+			ObjectMode: storage.FOLDER,
+			ParentId:   folderId,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    http.StatusInternalServerError,
+				"message": "server error",
+				"body":    nil,
+			})
+
+			return
+		}
+
 		for _, photo := range bodyComplaint.Photos {
 			file, err := photo.Open()
 			if err != nil {

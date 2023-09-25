@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-	"safechildhood/internal/app/domain"
 	"safechildhood/tools"
 	"time"
 
@@ -31,16 +29,6 @@ func NewPlaygroundsService(changeColorTime time.Duration) *PlaygroundsService {
 	}
 }
 
-func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapProperties) {
-	p.playgroundsMap = make(map[string]*MapProperties)
-
-	for k, v := range playgroundsMap {
-		p.playgroundsMap[k] = v
-	}
-
-	fmt.Println(playgroundsMap)
-}
-
 func (p *PlaygroundsService) GetPlaygrounds() *geojson.FeatureCollection {
 	return p.playgrounds
 }
@@ -49,12 +37,59 @@ func (p *PlaygroundsService) CheckRefreshState() bool {
 	return p.refreshState
 }
 
-func (p *PlaygroundsService) RefreshPlaygrounds() {
-	defer func(p *PlaygroundsService) {
-		time.Sleep(3 * time.Second)
+func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapProperties) {
+	p.playgroundsMap = make(map[string]*MapProperties)
+
+	for k, v := range playgroundsMap {
+		p.playgroundsMap[k] = v
+	}
+
+	p.updatePlaygrounds()
+}
+
+func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties) {
+	updateBool := false
+
+	for k, v := range p.playgroundsMap {
+		properties, ok := playgroundsMap[k]
+		if !ok || properties.Time == (time.Time{}) {
+			if v.Color != "green" {
+				v.Color = "green"
+
+				updateBool = true
+			}
+
+			continue
+		}
+
+		color := ""
+
+		if time.Since(properties.Time) > p.changeColorTime {
+			color = "red"
+		} else {
+			color = "yellow"
+		}
+
+		if v.Color != color {
+			v.Color = color
+
+			updateBool = true
+		}
+	}
+
+	if updateBool {
+		p.updatePlaygrounds()
+
+		p.refreshState = true
+
+		time.Sleep(2 * time.Second)
 
 		p.refreshState = false
-	}(p)
+	}
+}
+
+func (p *PlaygroundsService) updatePlaygrounds() {
+	p.playgrounds = geojson.NewFeatureCollection()
 
 	for stringCoordinates, props := range p.playgroundsMap {
 		coordinates, _ := tools.StringToCoordinates(stringCoordinates)
@@ -67,55 +102,6 @@ func (p *PlaygroundsService) RefreshPlaygrounds() {
 			"address": props.Address,
 		}
 
-		if props.Time != (time.Time{}) {
-			feature.Properties["time"] = props.Time
-		}
-
 		p.playgrounds.AddFeature(feature)
-	}
-
-	fmt.Println(p.playgrounds)
-
-	p.refreshState = true
-}
-
-func (p *PlaygroundsService) UpdatePlaygroundsMap(complaints []domain.Complaint) {
-	for _, complaint := range complaints {
-		if playground, ok := p.playgroundsMap[complaint.Coordinates]; ok {
-			playground.Time = complaint.CreatedAt
-			playground.Color = "yellow"
-
-			if time.Since(complaint.CreatedAt) > p.changeColorTime {
-				playground.Color = "red"
-			}
-		}
-	}
-
-	p.RefreshPlaygrounds()
-}
-
-func (p *PlaygroundsService) AutoCheckerFeatureTime() {
-	ticker := time.NewTicker(1 * time.Second)
-
-	update := false
-
-	for range ticker.C {
-		for _, props := range p.playgroundsMap {
-			if props.Color != "yellow" {
-				continue
-			}
-
-			if time.Since(props.Time) > p.changeColorTime {
-				props.Color = "red"
-
-				update = true
-			}
-		}
-
-		if update {
-			p.RefreshPlaygrounds()
-
-			update = false
-		}
 	}
 }

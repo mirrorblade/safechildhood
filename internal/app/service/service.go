@@ -10,18 +10,17 @@ import (
 )
 
 type Complaints interface {
+	GetEarly(ctx context.Context) ([]domain.Complaint, error) 
 	Get(ctx context.Context, complaintId any) (domain.Complaint, error)
 	Create(ctx context.Context, complaint *domain.Complaint) error
 	Delete(ctx context.Context, complaintId any) error
 }
 
 type Playgrounds interface {
-	SetPlaygroundsMap(playgroundsMap map[string]*MapProperties)
 	GetPlaygrounds() *geojson.FeatureCollection
 	CheckRefreshState() bool
-	RefreshPlaygrounds()
-	UpdatePlaygroundsMap(complaints []domain.Complaint)
-	AutoCheckerFeatureTime()
+	SetPlaygroundsMap(playgroundsMap map[string]*MapProperties)
+	UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties)
 }
 
 type Storage interface {

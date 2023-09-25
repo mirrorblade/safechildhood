@@ -6,14 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"safechildhood/internal/app/domain"
 	"safechildhood/internal/app/handler"
 	"safechildhood/internal/app/repository"
 	"safechildhood/internal/app/service"
 	"safechildhood/pkg/storage"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -26,16 +28,16 @@ type App struct {
 func New() *App {
 	app := new(App)
 
-	conn, err := pgx.Connect(context.Background(), "postgres://egzbmlsh:LShKLL4NFye8XhQdPx1I3jltNMkYLifH@cornelius.db.elephantsql.com/egzbmlsh")
+	pool, err := pgxpool.New(context.Background(), "postgres://egzbmlsh:LShKLL4NFye8XhQdPx1I3jltNMkYLifH@cornelius.db.elephantsql.com/egzbmlsh")
 	if err != nil {
 		panic(err)
 	}
 
-	app.repository = repository.New(conn)
+	app.repository = repository.New(pool)
 
 	playgrounds := service.NewPlaygroundsService(7 * time.Hour * 24)
 
-	complaints := service.NewComplaintsService(app.repository.Complaints, playgrounds)
+	complaints := service.NewComplaintsService(app.repository.Complaints)
 
 	googleDrive, err := storage.NewGoogleDrive(context.Background(), "./key.json")
 	if err != nil {
@@ -59,13 +61,30 @@ func New() *App {
 		}
 	}
 
-	go app.service.Playgrounds.AutoCheckerFeatureTime()
-
 	app.handler = handler.New(app.service)
 
 	app.handler.Init()
 
+	go app.autoUpdatePlaygroundsMap()
+
 	return app
+}
+
+func (a *App) autoUpdatePlaygroundsMap() {
+	ticker := time.NewTicker(1 * time.Second)
+
+	defer func(t *time.Ticker) {
+		ticker.Stop()
+	}(ticker)
+
+	for range ticker.C {
+		complaints, err := a.service.GetEarly(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+
+		a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
+	}
 }
 
 func (a *App) initPlaygroundsMap(pathToResource string) []error {
@@ -108,18 +127,30 @@ func (a *App) initPlaygroundsMap(pathToResource string) []error {
 
 	a.service.Playgrounds.SetPlaygroundsMap(playgroundsMap)
 
-	a.initFoldersIdsMap(context.Background(), playgroundsMap)
+	//a.initFoldersIdsMap(context.Background(), playgroundsMap)
 
-	complaints, err := a.repository.Complaints.GetEarly(context.Background())
+	complaints, err := a.service.Complaints.GetEarly(context.Background())
 	if err != nil {
 		errorsSlice = append(errorsSlice, err)
 
 		return errorsSlice
 	}
 
-	a.service.Playgrounds.UpdatePlaygroundsMap(complaints)
+	a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
 
 	return []error{}
+}
+
+func (a *App) createPlaygroundsMapFromComplaints(complaints []domain.Complaint) map[string]*service.MapProperties {
+	playgroundsMap := make(map[string]*service.MapProperties)
+
+	for _, complaint := range complaints {
+		playgroundsMap[complaint.Coordinates] = &service.MapProperties{
+			Time: complaint.CreatedAt,
+		}
+	}
+
+	return playgroundsMap
 }
 
 func (a *App) initFoldersIdsMap(ctx context.Context, playgroundsMap map[string]*service.MapProperties) []error {
