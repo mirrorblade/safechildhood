@@ -58,29 +58,31 @@ func (g *GoogleDrive) Get(ctx context.Context, objectId string) (*drive.File, er
 	return g.service.Files.Get(objectId).Context(ctx).Do()
 }
 
-func (g *GoogleDrive) GetByName(ctx context.Context, params GoogleDriveParameters) ([]*drive.File, error) {
-	if params.Name == "" {
+func (g *GoogleDrive) GetByParams(ctx context.Context, params GoogleDriveParameters) ([]*drive.File, error) {
+	if params.Name == "" && params.ObjectMode == 0 && params.ParentId == "" {
 		return []*drive.File{}, ErrInvalidParams
 	}
 
-	var query strings.Builder
+	querySlice := make([]string, 0, 3)
 
-	query.WriteString(fmt.Sprintf(`name="%s"`, params.Name))
+	if params.Name != "" {
+		querySlice = append(querySlice, fmt.Sprintf(`name="%s"`, params.Name))
+	}
 
 	if params.ObjectMode == FILE {
-		query.WriteString(fmt.Sprintf(` and mimeType="%s"`, GOOGLE_DRIVE_FILE_MIMETYPE))
+		querySlice = append(querySlice, fmt.Sprintf(`mimeType="%s"`, GOOGLE_DRIVE_FILE_MIMETYPE))
 	} else if params.ObjectMode == FOLDER {
-		query.WriteString(fmt.Sprintf(` and mimeType="%s"`, GOOGLE_DRIVE_FOLDER_MIMETYPE))
+		querySlice = append(querySlice, fmt.Sprintf(`mimeType="%s"`, GOOGLE_DRIVE_FOLDER_MIMETYPE))
 	}
 
 	if params.ParentId != "" {
-		query.WriteString(fmt.Sprintf(` and "%s" in parents`, params.ParentId))
+		querySlice = append(querySlice, fmt.Sprintf(`"%s" in parents`, params.ParentId))
 	}
 
 	list, err := g.service.Files.
 		List().
 		Q(
-			query.String(),
+			strings.Join(querySlice, " and "),
 		).
 		Context(ctx).
 		Do()

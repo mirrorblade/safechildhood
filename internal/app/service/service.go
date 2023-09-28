@@ -10,7 +10,7 @@ import (
 )
 
 type Complaints interface {
-	GetEarly(ctx context.Context) ([]domain.Complaint, error) 
+	GetEarly(ctx context.Context) ([]domain.Complaint, error)
 	Get(ctx context.Context, complaintId any) (domain.Complaint, error)
 	Create(ctx context.Context, complaint *domain.Complaint) error
 	Delete(ctx context.Context, complaintId any) error
@@ -26,7 +26,7 @@ type Playgrounds interface {
 type Storage interface {
 	SetFoldersIdsMap(foldersIdsMap map[string]string)
 	GetSavedFolderId(key string) string
-	GetByName(ctx context.Context, params storage.GoogleDriveParameters) ([]*drive.File, error)
+	GetByParams(ctx context.Context, params storage.GoogleDriveParameters) ([]*drive.File, error)
 	Create(ctx context.Context, params storage.GoogleDriveParameters) (*drive.File, error)
 }
 

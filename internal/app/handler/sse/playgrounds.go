@@ -18,9 +18,9 @@ func (h *Handler) getPlaygrounds(c *gin.Context) {
 		if h.service.Playgrounds.CheckRefreshState() {
 			c.SSEvent("playgrounds", h.service.Playgrounds.GetPlaygrounds())
 
-			time.Sleep(3 * time.Second)
+			time.Sleep(1500 * time.Millisecond)
 		} else {
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 
 		return true

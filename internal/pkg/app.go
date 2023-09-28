@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/schollz/progressbar/v3"
 )
 
 type App struct {
@@ -127,7 +126,7 @@ func (a *App) initPlaygroundsMap(pathToResource string) []error {
 
 	a.service.Playgrounds.SetPlaygroundsMap(playgroundsMap)
 
-	//a.initFoldersIdsMap(context.Background(), playgroundsMap)
+	a.initFoldersIdsMap(context.Background())
 
 	complaints, err := a.service.Complaints.GetEarly(context.Background())
 	if err != nil {
@@ -153,48 +152,23 @@ func (a *App) createPlaygroundsMapFromComplaints(complaints []domain.Complaint) 
 	return playgroundsMap
 }
 
-func (a *App) initFoldersIdsMap(ctx context.Context, playgroundsMap map[string]*service.MapProperties) []error {
-	errors := make([]error, 0)
-
-	bar := progressbar.Default(int64(len(playgroundsMap)))
-	bar.Describe("initializtion coordinates folders")
-
+func (a *App) initFoldersIdsMap(ctx context.Context) error {
 	foldersIdsMap := make(map[string]string)
 
-	for coordinates := range playgroundsMap {
-		folder, err := a.service.Storage.Create(ctx, storage.GoogleDriveParameters{
-			Name:       coordinates,
-			ObjectMode: storage.FOLDER,
-			ParentId:   "1JtHjonTau-gSkQd3Wj7wZ1Db7A8xHZDw",
-		})
-		if err != nil {
-			errors = append(errors, err)
-
-			foundFolder, err := a.service.Storage.GetByName(context.Background(), storage.GoogleDriveParameters{
-				Name:       coordinates,
-				ObjectMode: storage.FOLDER,
-				ParentId:   "1JtHjonTau-gSkQd3Wj7wZ1Db7A8xHZDw",
-			})
-			if err != nil {
-				errors = append(errors, err)
-
-				goto updateBar
-			}
-
-			folder.Id = foundFolder[0].Id
-		}
-
-		foldersIdsMap[coordinates] = folder.Id
-
-	updateBar:
-		bar.Add(1)
+	files, err := a.service.Storage.GetByParams(context.Background(), storage.GoogleDriveParameters{
+		ParentId: "1cM704evigVIu8gAssGFmohdoHo5MH8Gs",
+	})
+	if err != nil {
+		return err
 	}
 
-	fmt.Println(foldersIdsMap)
+	for _, file := range files {
+		foldersIdsMap[file.Name] = file.Id
+	}
 
 	a.service.Storage.SetFoldersIdsMap(foldersIdsMap)
 
-	return errors
+	return nil
 }
 
 func (a *App) Run() {

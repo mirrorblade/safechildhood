@@ -1,7 +1,7 @@
 package service
 
 import (
-	"safechildhood/tools"
+	converter "safechildhood/tools/coordinates"
 	"time"
 
 	geojson "github.com/paulmach/go.geojson"
@@ -82,7 +82,7 @@ func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*Map
 
 		p.refreshState = true
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(1250 * time.Millisecond)
 
 		p.refreshState = false
 	}
@@ -92,7 +92,7 @@ func (p *PlaygroundsService) updatePlaygrounds() {
 	p.playgrounds = geojson.NewFeatureCollection()
 
 	for stringCoordinates, props := range p.playgroundsMap {
-		coordinates, _ := tools.StringToCoordinates(stringCoordinates)
+		coordinates, _ := converter.StringToCoordinates(stringCoordinates)
 
 		feature := geojson.NewPointFeature([]float64{coordinates.Longitude, coordinates.Latitude})
 

@@ -31,8 +31,8 @@ func (s *StorageService) GetSavedFolderId(key string) string {
 	return s.foldersIdsMap[key]
 }
 
-func (s *StorageService) GetByName(ctx context.Context, params storage.GoogleDriveParameters) ([]*drive.File, error) {
-	return s.service.GetByName(ctx, params)
+func (s *StorageService) GetByParams(ctx context.Context, params storage.GoogleDriveParameters) ([]*drive.File, error) {
+	return s.service.GetByParams(ctx, params)
 }
 
 func (s *StorageService) Create(ctx context.Context, params storage.GoogleDriveParameters) (*drive.File, error) {

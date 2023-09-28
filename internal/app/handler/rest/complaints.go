@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"safechildhood/internal/app/domain"
 	"safechildhood/pkg/storage"
-	"safechildhood/tools"
+	tools "safechildhood/tools/coordinates"
 	"time"
 
 	"github.com/gin-gonic/gin"
