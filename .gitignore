@@ -1,8 +1,10 @@
 .env
 .air.conf
+/.vscode
+/build
+/bin
+/tmp
+/tools
 /key.json
-tmp/
-schema/
-media/
-scraping/
 /*.go
+/*.spec

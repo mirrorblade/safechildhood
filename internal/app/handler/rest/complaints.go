@@ -6,14 +6,18 @@ import (
 	"mime/multipart"
 	"net/http"
 	"safechildhood/internal/app/domain"
+	"safechildhood/internal/app/utils"
 	"safechildhood/pkg/storage"
-	tools "safechildhood/tools/coordinates"
+	"slices"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gofrs/uuid/v5"
 )
+
+var commonImageMimeTypes = []string{"image/avif", "image/bmp", "image/gif", "image/jpeg", "image/png", "image/tiff", "image/webp"}
 
 func (h *Handler) initComplaints() {
 	basicAuth := gin.BasicAuth(gin.Accounts{
@@ -100,7 +104,7 @@ func (h *Handler) createComplaint(c *gin.Context) {
 		}
 	}
 
-	if _, err := tools.StringToCoordinates(bodyComplaint.Coordinates); err != nil {
+	if _, err := utils.StringToCoordinates(bodyComplaint.Coordinates); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "bad request",
@@ -168,6 +172,27 @@ func (h *Handler) createComplaint(c *gin.Context) {
 			}
 
 			defer file.Close()
+
+			mimeType, err := mimetype.DetectReader(file)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":    http.StatusBadRequest,
+					"message": "bad request",
+					"body":    nil,
+				})
+
+				return
+			}
+
+			if !slices.Contains(commonImageMimeTypes, mimeType.Extension()) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":    http.StatusBadRequest,
+					"message": "bad request",
+					"body":    nil,
+				})
+
+				return
+			}
 
 			if _, err := h.service.Storage.Create(c.Request.Context(), storage.GoogleDriveParameters{
 				Name:                   photo.Filename,

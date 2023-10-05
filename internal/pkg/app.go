@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
+	"safechildhood/internal/app/config"
 	"safechildhood/internal/app/domain"
 	"safechildhood/internal/app/handler"
 	"safechildhood/internal/app/repository"
@@ -19,6 +19,7 @@ import (
 )
 
 type App struct {
+	config     *config.Config
 	repository *repository.Repository
 	service    *service.Service
 	handler    *handler.Handler
@@ -27,7 +28,9 @@ type App struct {
 func New() *App {
 	app := new(App)
 
-	pool, err := pgxpool.New(context.Background(), "postgres://egzbmlsh:LShKLL4NFye8XhQdPx1I3jltNMkYLifH@cornelius.db.elephantsql.com/egzbmlsh")
+	app.config = config.New()
+
+	pool, err := pgxpool.New(context.Background(), app.config.DatabaseUri)
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +41,7 @@ func New() *App {
 
 	complaints := service.NewComplaintsService(app.repository.Complaints)
 
-	googleDrive, err := storage.NewGoogleDrive(context.Background(), "./key.json")
+	googleDrive, err := storage.NewGoogleDrive(context.Background(), app.config.PathToGoogleServiceAccout)
 	if err != nil {
 		panic(err)
 	}
@@ -54,10 +57,8 @@ func New() *App {
 		storage,
 	)
 
-	if errs := app.initPlaygroundsMap("./resources/playgrounds.csv"); len(errs) != 0 {
-		for _, err := range errs {
-			fmt.Println(err)
-		}
+	if err := app.initPlaygroundsMap(app.config.PathToPlaygroundsFile); err != nil {
+		panic(err)
 	}
 
 	app.handler = handler.New(app.service)
@@ -86,16 +87,12 @@ func (a *App) autoUpdatePlaygroundsMap() {
 	}
 }
 
-func (a *App) initPlaygroundsMap(pathToResource string) []error {
+func (a *App) initPlaygroundsMap(pathToResource string) error {
 	playgroundsMap := make(map[string]*service.MapProperties)
-
-	errorsSlice := make([]error, 0)
 
 	file, err := os.OpenFile(pathToResource, os.O_RDONLY, 0777)
 	if err != nil {
-		errorsSlice = append(errorsSlice, err)
-
-		return errorsSlice
+		return err
 	}
 
 	defer file.Close()
@@ -112,9 +109,7 @@ func (a *App) initPlaygroundsMap(pathToResource string) []error {
 				break
 			}
 
-			errorsSlice = append(errorsSlice, err)
-
-			return errorsSlice
+			return err
 		}
 
 		playgroundsMap[data[0]] = &service.MapProperties{
@@ -126,18 +121,18 @@ func (a *App) initPlaygroundsMap(pathToResource string) []error {
 
 	a.service.Playgrounds.SetPlaygroundsMap(playgroundsMap)
 
-	a.initFoldersIdsMap(context.Background())
+	if err := a.initFoldersIdsMap(context.Background()); err != nil {
+		return err
+	}
 
 	complaints, err := a.service.Complaints.GetEarly(context.Background())
 	if err != nil {
-		errorsSlice = append(errorsSlice, err)
-
-		return errorsSlice
+		return err
 	}
 
 	a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
 
-	return []error{}
+	return nil
 }
 
 func (a *App) createPlaygroundsMapFromComplaints(complaints []domain.Complaint) map[string]*service.MapProperties {
@@ -156,7 +151,7 @@ func (a *App) initFoldersIdsMap(ctx context.Context) error {
 	foldersIdsMap := make(map[string]string)
 
 	files, err := a.service.Storage.GetByParams(context.Background(), storage.GoogleDriveParameters{
-		ParentId: "1cM704evigVIu8gAssGFmohdoHo5MH8Gs",
+		ParentId: a.config.MediaFolderId,
 	})
 	if err != nil {
 		return err

@@ -1,0 +1,1 @@
+ALTER TABLE complaints ALTER COLUMN photos_path DROP DEFAULT;

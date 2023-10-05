@@ -1,0 +1,1 @@
+ALTER TABLE complaints ADD photos_path VARCHAR(100);

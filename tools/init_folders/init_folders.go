@@ -23,7 +23,7 @@ func init() {
 func main() {
 	coordinatesSlice := make([]string, 0)
 
-	file, err := os.OpenFile("./resources/playgrounds.csv", os.O_RDONLY, 0777)
+	file, err := os.OpenFile(os.Getenv("PATH_TO_PLAYGROUNDS_FILE"), os.O_RDONLY, 0777)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ func main() {
 		coordinatesSlice = append(coordinatesSlice, data[0])
 	}
 
-	googleDrive, err := storage.NewGoogleDrive(context.Background(), "./key.json")
+	googleDrive, err := storage.NewGoogleDrive(context.Background(), os.Getenv("PATH_TO_GOOGLE_SERVICE_ACCOUNT"))
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +62,7 @@ func main() {
 		if _, err := googleDrive.Create(context.Background(), storage.GoogleDriveParameters{
 			Name:       coordinates,
 			ObjectMode: storage.FOLDER,
-			ParentId:   "1cM704evigVIu8gAssGFmohdoHo5MH8Gs",
+			ParentId:   os.Getenv("MEDIA_FOLDER_ID"),
 		}); err != nil {
 			if errors.Is(err, storage.ErrObjectAlreadyExists) {
 				errorsSlice = append(errorsSlice, err)

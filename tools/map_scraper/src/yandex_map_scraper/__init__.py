@@ -1,1 +1,0 @@
-from .yandex_map_scraper import *
