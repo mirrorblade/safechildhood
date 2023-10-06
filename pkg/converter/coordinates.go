@@ -1,4 +1,4 @@
-package utils
+package converter
 
 import (
 	"fmt"
@@ -24,12 +24,12 @@ func CoordinatesToString(coordinates []float64) string {
 func StringToCoordinates(str string) (Coordinates, error) {
 	coordinates := strings.Split(str, ",")
 
-	latitude, err := strconv.ParseFloat(coordinates[0], 64)
+	latitude, err := strconv.ParseFloat(strings.TrimSpace(coordinates[0]), 64)
 	if err != nil {
 		return Coordinates{}, err
 	}
 
-	longitude, err := strconv.ParseFloat(coordinates[1], 64)
+	longitude, err := strconv.ParseFloat(strings.TrimSpace(coordinates[1]), 64)
 	if err != nil {
 		return Coordinates{}, err
 	}

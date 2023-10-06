@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"safechildhood/internal/app/domain"
-	"safechildhood/internal/app/utils"
+	"safechildhood/pkg/converter"
 	"safechildhood/pkg/storage"
 	"slices"
 	"time"
@@ -21,7 +21,7 @@ var commonImageMimeTypes = []string{"image/avif", "image/bmp", "image/gif", "ima
 
 func (h *Handler) initComplaints() {
 	basicAuth := gin.BasicAuth(gin.Accounts{
-		"admin": "namelesspersonalwaysright",
+		"admin": "123456789",
 	})
 
 	complaint := h.router.Group("/complaint")
@@ -104,7 +104,7 @@ func (h *Handler) createComplaint(c *gin.Context) {
 		}
 	}
 
-	if _, err := utils.StringToCoordinates(bodyComplaint.Coordinates); err != nil {
+	if _, err := converter.StringToCoordinates(bodyComplaint.Coordinates); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "bad request",
@@ -133,6 +133,16 @@ func (h *Handler) createComplaint(c *gin.Context) {
 	complaint.CreatedAt = time.Now()
 
 	if len(bodyComplaint.Photos) != 0 {
+		if len(bodyComplaint.Photos) > h.handlerConfig.Form.MaxPhotos {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    http.StatusBadRequest,
+				"message": domain.ErrTooManyPhotos.Error() + fmt.Sprintf(" (max photos count: %d)", h.handlerConfig.Form.MaxPhotos),
+				"body":    nil,
+			})
+
+			return
+		}
+
 		folderId := h.service.GetSavedFolderId(bodyComplaint.Coordinates)
 		if folderId == "" {
 			c.JSON(http.StatusBadRequest, gin.H{

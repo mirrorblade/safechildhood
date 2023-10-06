@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+  cors:
+    allowCredentials: true
+    allowMethods: ["GET", "POST", "DELETE"]
+    allowHeaders: ["Origin"]
+    maxAge: 12h
+
+map:
+  bounds:
+    southWest: [57.814671, 39.390803]
+    northEast: [57.937349, 39.689861]
+
+  defaultPosition: [57.860866, 39.514879]
+
+  zoom:
+    default: 16
+    min: 14
+    max: 18
+
+playgrounds:
+  criticalTimeLimit: 168h  # 7 days
+  pathToFile: "./resources/playgrounds.csv"
+
+googleDrive:
+  pathToGoogleServiceAccount: "./key.json"
+
+form:
+  maxSize: 15mb
+  maxPhotos: 6

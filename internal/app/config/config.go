@@ -3,18 +3,71 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/joho/godotenv"
+	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	DatabaseUri string
+type (
+	Config struct {
+		Database    DatabaseConfig
+		Server      ServerConfig      `yaml:"server"`
+		Map         MapConfig         `yaml:"map"`
+		Playgrounds PlaygroundsConfig `yaml:"playgrounds"`
+		GoogleDrive GoogleDriveConfig `yaml:"googleDrive"`
+		Form        FormConfig        `yaml:"form"`
+	}
 
-	PathToPlaygroundsFile string
+	DatabaseConfig struct {
+		Uri string
+	}
 
-	PathToGoogleServiceAccout string
-	MediaFolderId             string
-}
+	ServerConfig struct {
+		Port int `yaml:"port"`
+
+		Cors CorsConfig `yaml:"cors"`
+	}
+
+	CorsConfig struct {
+		AllowOrigins     []string
+		AllowCredentials bool          `yaml:"allowCredentials"`
+		AllowMethods     []string      `yaml:"allowMethods"`
+		AllowHeaders     []string      `yaml:"allowHeaders"`
+		MaxAge           time.Duration `yaml:"maxAge"`
+	}
+
+	MapConfig struct {
+		Bounds struct {
+			SouthWest []float64 `yaml:"southWest"`
+			NorthEast []float64 `yaml:"northEast"`
+		} `yaml:"bounds"`
+
+		DefaultPosition []float64 `yaml:"defaultPosition"`
+
+		Zoom struct {
+			Default int `yaml:"default"`
+			Min     int `yaml:"min"`
+			Max     int `yaml:"max"`
+		} `yaml:"zoom"`
+	}
+
+	PlaygroundsConfig struct {
+		CriticalTimeLimit time.Duration `yaml:"criticalTimeLimit"`
+		PathToFile        string        `yaml:"pathToFile"`
+	}
+
+	GoogleDriveConfig struct {
+		PathToGoogleServiceAccout string `yaml:"pathToGoogleServiceAccount"`
+		MediaFolderId             string
+	}
+
+	FormConfig struct {
+		MaxSize   datasize.ByteSize `yaml:"maxSize"`
+		MaxPhotos int               `yaml:"maxPhotos"`
+	}
+)
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -22,15 +75,23 @@ func init() {
 	}
 }
 
-func New() *Config {
+func New(configPath string) *Config {
 	c := new(Config)
 
-	c.DatabaseUri = os.Getenv("DATABASE_URI")
+	file, err := os.ReadFile(configPath)
+	if err != nil {
+		panic(err)
+	}
 
-	c.PathToPlaygroundsFile = os.Getenv("PATH_TO_PLAYGROUNDS_FILE")
+	if err := yaml.Unmarshal(file, &c); err != nil {
+		panic(err)
+	}
 
-	c.PathToGoogleServiceAccout = os.Getenv("PATH_TO_GOOGLE_SERVICE_ACCOUNT")
-	c.MediaFolderId = os.Getenv("MEDIA_FOLDER_ID")
+	c.Database.Uri = os.Getenv("DATABASE_URI")
+
+	c.Server.Cors.AllowOrigins = []string{os.Getenv("CORS_ALLOW_ORIGIN")}
+
+	c.GoogleDrive.MediaFolderId = os.Getenv("MEDIA_FOLDER_ID")
 
 	return c
 }

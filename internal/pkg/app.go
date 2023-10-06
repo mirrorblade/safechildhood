@@ -13,6 +13,7 @@ import (
 	"safechildhood/internal/app/repository"
 	"safechildhood/internal/app/service"
 	"safechildhood/pkg/storage"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,20 +29,20 @@ type App struct {
 func New() *App {
 	app := new(App)
 
-	app.config = config.New()
+	app.config = config.New("./configs/main.yaml")
 
-	pool, err := pgxpool.New(context.Background(), app.config.DatabaseUri)
+	pool, err := pgxpool.New(context.Background(), app.config.Database.Uri)
 	if err != nil {
 		panic(err)
 	}
 
 	app.repository = repository.New(pool)
 
-	playgrounds := service.NewPlaygroundsService(7 * time.Hour * 24)
+	playgrounds := service.NewPlaygroundsService(app.config.Playgrounds.CriticalTimeLimit)
 
 	complaints := service.NewComplaintsService(app.repository.Complaints)
 
-	googleDrive, err := storage.NewGoogleDrive(context.Background(), app.config.PathToGoogleServiceAccout)
+	googleDrive, err := storage.NewGoogleDrive(context.Background(), app.config.GoogleDrive.PathToGoogleServiceAccout)
 	if err != nil {
 		panic(err)
 	}
@@ -57,13 +58,17 @@ func New() *App {
 		storage,
 	)
 
-	if err := app.initPlaygroundsMap(app.config.PathToPlaygroundsFile); err != nil {
+	if err := app.initPlaygroundsMap(app.config.Playgrounds.PathToFile); err != nil {
 		panic(err)
 	}
 
 	app.handler = handler.New(app.service)
 
-	app.handler.Init()
+	app.handler.Init(config.HandlerConfig{
+		Cors: app.config.Server.Cors,
+		Map:  app.config.Map,
+		Form: app.config.Form,
+	})
 
 	go app.autoUpdatePlaygroundsMap()
 
@@ -81,9 +86,9 @@ func (a *App) autoUpdatePlaygroundsMap() {
 		complaints, err := a.service.GetEarly(context.Background())
 		if err != nil {
 			log.Println(err)
+		} else {
+			a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
 		}
-
-		a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
 	}
 }
 
@@ -151,7 +156,7 @@ func (a *App) initFoldersIdsMap(ctx context.Context) error {
 	foldersIdsMap := make(map[string]string)
 
 	files, err := a.service.Storage.GetByParams(context.Background(), storage.GoogleDriveParameters{
-		ParentId: a.config.MediaFolderId,
+		ParentId: a.config.GoogleDrive.MediaFolderId,
 	})
 	if err != nil {
 		return err
@@ -167,5 +172,5 @@ func (a *App) initFoldersIdsMap(ctx context.Context) error {
 }
 
 func (a *App) Run() {
-	a.handler.Run(":8080")
+	a.handler.Run(":" + strconv.Itoa(a.config.Server.Port))
 }
