@@ -92,14 +92,6 @@ func (h *Handler) getComplaint(c *gin.Context) {
 func (h *Handler) createComplaint(c *gin.Context) {
 	var bodyComplaint createComplaintBody
 
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"code":    http.StatusInternalServerError,
-		"message": "bad asdsadsafasf",
-		"body":    nil,
-	})
-
-	return
-
 	if err := c.ShouldBindWith(&bodyComplaint, binding.FormMultipart); err != nil {
 		if bodyComplaint.Coordinates == "" || bodyComplaint.ShortDescription == "" || bodyComplaint.Description == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
