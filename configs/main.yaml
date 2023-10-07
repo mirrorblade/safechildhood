@@ -1,18 +1,24 @@
 server:
-  port: 8080
+  port: 8083
 
   cors:
     allowCredentials: true
     allowMethods: ["GET", "POST", "DELETE"]
-    allowHeaders: ["Origin"]
+    allowHeaders: ["Origin", "Content-Length", "Content-Type"]
     maxAge: 12h
 
 map:
   bounds:
-    southWest: [57.814671, 39.390803]
-    northEast: [57.937349, 39.689861]
+    southWest: 
+      latitude: 57.814671
+      longitude: 39.390803
+    northEast: 
+      latitude: 57.937349
+      longitude: 39.689861
 
-  defaultPosition: [57.860866, 39.514879]
+  defaultPosition: 
+    latitude: 57.860866
+    longitude: 39.514879
 
   zoom:
     default: 16
@@ -29,3 +35,7 @@ googleDrive:
 form:
   maxSize: 15mb
   maxPhotos: 6
+
+logger:
+  output: ./log/safechildhood.log
+  outputErrors: ./log/safechildhood.log

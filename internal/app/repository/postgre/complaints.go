@@ -23,6 +23,22 @@ func NewComplaints(pool *pgxpool.Pool) *Complaints {
 		table: "complaints",
 	}
 }
+func (c *Complaints) GetEarly(ctx context.Context) ([]*domain.Complaint, error) {
+	startQuery := fmt.Sprintf(`SELECT DISTINCT ON (coordinates) *
+		 FROM %s ORDER BY coordinates, created_at ASC`, c.table)
+
+	rows, err := c.pool.Query(ctx, startQuery)
+	if err != nil {
+		return []*domain.Complaint{}, err
+	}
+
+	complaints, err := pgx.CollectRows(rows, pgx.RowToStructByName[*domain.Complaint])
+	if err != nil {
+		return []*domain.Complaint{}, err
+	}
+
+	return complaints, nil
+}
 
 func (c *Complaints) Get(ctx context.Context, complaintId any) (domain.Complaint, error) {
 	startQuery := fmt.Sprintf("SELECT * FROM %s WHERE id=$1", c.table)
@@ -54,24 +70,7 @@ func (c *Complaints) Get(ctx context.Context, complaintId any) (domain.Complaint
 	return complaint, nil
 }
 
-func (c *Complaints) GetEarly(ctx context.Context) ([]domain.Complaint, error) {
-	startQuery := fmt.Sprintf(`SELECT DISTINCT ON (coordinates) *
-	 	FROM %s ORDER BY coordinates, created_at ASC`, c.table)
-
-	rows, err := c.pool.Query(ctx, startQuery)
-	if err != nil {
-		return []domain.Complaint{}, err
-	}
-
-	complaints, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Complaint])
-	if err != nil {
-		return []domain.Complaint{}, err
-	}
-
-	return complaints, nil
-}
-
-func (c *Complaints) Create(ctx context.Context, complaint *domain.Complaint) error {
+func (c *Complaints) Create(ctx context.Context, complaint domain.Complaint) error {
 	startQuery := fmt.Sprintf(`INSERT INTO %s (
 		id, 
 		coordinates, 

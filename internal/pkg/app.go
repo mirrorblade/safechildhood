@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"safechildhood/internal/app/config"
 	"safechildhood/internal/app/domain"
@@ -17,19 +16,22 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type App struct {
+	logger     *zap.Logger
 	config     *config.Config
 	repository *repository.Repository
 	service    *service.Service
 	handler    *handler.Handler
 }
 
-func New() *App {
+func New(configsPath []string) *App {
 	app := new(App)
 
-	app.config = config.New("./configs/main.yaml")
+	app.config = config.New(configsPath)
 
 	pool, err := pgxpool.New(context.Background(), app.config.Database.Uri)
 	if err != nil {
@@ -62,12 +64,34 @@ func New() *App {
 		panic(err)
 	}
 
-	app.handler = handler.New(app.service)
+	if app.config.Server.Debug {
+		loggerConfig := zap.NewDevelopmentConfig()
+		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
+		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
+
+		app.logger, err = loggerConfig.Build()
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		loggerConfig := zap.NewProductionConfig()
+		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
+		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
+
+		app.logger, err = loggerConfig.Build()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	app.handler = handler.New(app.service, app.logger)
 
 	app.handler.Init(config.HandlerConfig{
-		Cors: app.config.Server.Cors,
-		Map:  app.config.Map,
-		Form: app.config.Form,
+		Server: app.config.Server,
+		Map:    app.config.Map,
+		Form:   app.config.Form,
 	})
 
 	go app.autoUpdatePlaygroundsMap()
@@ -85,7 +109,7 @@ func (a *App) autoUpdatePlaygroundsMap() {
 	for range ticker.C {
 		complaints, err := a.service.GetEarly(context.Background())
 		if err != nil {
-			log.Println(err)
+			a.logger.Error(err.Error())
 		} else {
 			a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
 		}
@@ -140,7 +164,7 @@ func (a *App) initPlaygroundsMap(pathToResource string) error {
 	return nil
 }
 
-func (a *App) createPlaygroundsMapFromComplaints(complaints []domain.Complaint) map[string]*service.MapProperties {
+func (a *App) createPlaygroundsMapFromComplaints(complaints []*domain.Complaint) map[string]*service.MapProperties {
 	playgroundsMap := make(map[string]*service.MapProperties)
 
 	for _, complaint := range complaints {

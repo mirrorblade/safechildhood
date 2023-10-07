@@ -8,29 +8,42 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
 	router  *gin.Engine
 	service *service.Service
+	logger  *zap.Logger
 }
 
-func New(service *service.Service) *Handler {
+func New(service *service.Service, logger *zap.Logger) *Handler {
 	return &Handler{
 		service: service,
+		logger:  logger,
 	}
 }
 
 func (h *Handler) Init(handlerConfig config.HandlerConfig) {
-	h.router = gin.Default()
+	mode := gin.ReleaseMode
+	if handlerConfig.Server.Debug {
+		mode = gin.DebugMode
+	}
+
+	gin.SetMode(mode)
+
+	h.router = gin.New()
 	h.router.MaxMultipartMemory = int64(handlerConfig.Form.MaxSize.Bytes())
 
+	h.router.Use(h.loggingMiddleware())
+
 	h.router.Use(cors.New(cors.Config{
-		AllowOrigins:     handlerConfig.Cors.AllowOrigins,
-		AllowMethods:     handlerConfig.Cors.AllowMethods,
-		AllowHeaders:     handlerConfig.Cors.AllowHeaders,
-		AllowCredentials: handlerConfig.Cors.AllowCredentials,
-		MaxAge:           handlerConfig.Cors.MaxAge,
+		AllowOrigins:     handlerConfig.Server.Cors.AllowOrigins,
+		AllowMethods:     handlerConfig.Server.Cors.AllowMethods,
+		AllowHeaders:     handlerConfig.Server.Cors.AllowHeaders,
+		AllowCredentials: handlerConfig.Server.Cors.AllowCredentials,
+		ExposeHeaders:    handlerConfig.Server.Cors.ExposeHeaders,
+		MaxAge:           handlerConfig.Server.Cors.MaxAge,
 	}))
 
 	hRest := rest.New(h.router, h.service, handlerConfig)

@@ -1,20 +1,30 @@
-ifeq (run,$(firstword $(MAKECMDGOALS)))
-
-  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-
-  $(eval $(RUN_ARGS):;@:)
-
+ifeq ($(NAME),)
+	NAME := "safechildhood"
 endif
 
-build:
-	./scripts/build.sh
+ifeq ($(TAG),)
+	TAG := "latest"
+endif
 
-build_tools:
-	./scripts/build_tools.sh
+IMAGE_TAG := ${NAME}:${TAG}
 
-scrape: build_tools
-	./bin/map_scraper $(RUN_ARGS)
-	./bin/init_folders
+build: deps
+	go build -o ./bin/safechildhood ./cmd/safechildhood/main.go
+	
+run: build
+	./bin/safechildhood
+
+build-docker:
+	./scripts/docker_object_exist.sh ${NAME} && docker rm ${NAME} || true
+	./scripts/docker_object_exist.sh ${IMAGE_TAG} && docker rmi ${IMAGE_TAG} || true
+
+	docker build -t ${IMAGE_TAG} .
+
+run-docker: build-docker
+	docker run --name ${NAME} --volume=./log/:/app/log/ --net=host ${IMAGE_TAG}
+
+deps:
+	go mod download
 
 tidy:
 	go mod tidy

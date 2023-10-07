@@ -9,9 +9,9 @@ import (
 )
 
 type Complaints interface {
+	GetEarly(ctx context.Context) ([]*domain.Complaint, error)
 	Get(ctx context.Context, complaintId any) (domain.Complaint, error)
-	GetEarly(ctx context.Context) ([]domain.Complaint, error)
-	Create(ctx context.Context, complaint *domain.Complaint) error
+	Create(ctx context.Context, complaint domain.Complaint) error
 	Delete(ctx context.Context, complaintId any) error
 }
 

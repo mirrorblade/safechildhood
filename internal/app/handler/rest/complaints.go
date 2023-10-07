@@ -24,7 +24,7 @@ func (h *Handler) initComplaints() {
 		"admin": "123456789",
 	})
 
-	complaint := h.router.Group("/complaint")
+	complaint := h.router.Group("/complaints")
 	{
 		complaint.GET("/:id", basicAuth, h.getComplaint)
 		complaint.POST("/", h.createComplaint)
@@ -91,6 +91,14 @@ func (h *Handler) getComplaint(c *gin.Context) {
 
 func (h *Handler) createComplaint(c *gin.Context) {
 	var bodyComplaint createComplaintBody
+
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"code":    http.StatusInternalServerError,
+		"message": "bad asdsadsafasf",
+		"body":    nil,
+	})
+
+	return
 
 	if err := c.ShouldBindWith(&bodyComplaint, binding.FormMultipart); err != nil {
 		if bodyComplaint.Coordinates == "" || bodyComplaint.ShortDescription == "" || bodyComplaint.Description == "" {
@@ -224,7 +232,7 @@ func (h *Handler) createComplaint(c *gin.Context) {
 		complaint.PhotosPath = fmt.Sprintf("/%s/%s", bodyComplaint.Coordinates, id)
 	}
 
-	if err := h.service.Complaints.Create(c.Request.Context(), complaint); err != nil {
+	if err := h.service.Complaints.Create(c.Request.Context(), *complaint); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
 			"message": "server error",

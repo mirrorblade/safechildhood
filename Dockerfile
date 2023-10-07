@@ -1,15 +1,26 @@
-FROM golang:1.21.1-alpine3.18
+FROM golang:1.21.1-alpine3.18 as builder
 
-WORKDIR /app
+WORKDIR /builder
 
 COPY . .
 
-RUN mkdir bin
+RUN apk update
+RUN apk add make
 
-RUN go mod download && go build -o ./bin/safechildhood ./cmd/safechildhood/main.go
+RUN make build
 
-EXPOSE 8080
 
-CMD [ "./bin/safechildhood" ]
+FROM alpine:3.18
+
+WORKDIR /app
+
+COPY --from=builder /builder/bin ./bin
+COPY --from=builder /builder/configs ./configs
+COPY --from=builder /builder/resources ./resources
+COPY --from=builder /builder/.env ./.env
+COPY --from=builder /builder/key.json ./key.json
+
+CMD ["./bin/safechildhood"]
+
 
 
