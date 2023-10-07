@@ -12,6 +12,7 @@ build: deps
 	go build -o ./bin/safechildhood ./cmd/safechildhood/main.go
 	
 run: build
+	mkdir log || true
 	./bin/safechildhood
 
 build-docker:
