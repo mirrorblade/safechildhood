@@ -5,8 +5,10 @@ import (
 	"safechildhood/internal/app/handler/rest"
 	"safechildhood/internal/app/handler/sse"
 	"safechildhood/internal/app/service"
+	"time"
 
 	"github.com/gin-contrib/cors"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -35,7 +37,7 @@ func (h *Handler) Init(handlerConfig config.HandlerConfig) {
 	h.router = gin.New()
 	h.router.MaxMultipartMemory = int64(handlerConfig.Form.MaxSize.Bytes())
 
-	h.router.Use(h.loggingMiddleware())
+	h.router.Use(ginzap.Ginzap(h.logger, time.RFC3339, true))
 
 	h.router.Use(cors.New(cors.Config{
 		AllowOrigins:     handlerConfig.Server.Cors.AllowOrigins,
