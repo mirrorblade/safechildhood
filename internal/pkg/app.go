@@ -17,7 +17,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type App struct {
@@ -66,7 +65,7 @@ func New(configsPath []string) *App {
 
 	if app.config.Server.Debug {
 		loggerConfig := zap.NewDevelopmentConfig()
-		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		//loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
 		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
 
@@ -76,7 +75,7 @@ func New(configsPath []string) *App {
 		}
 	} else {
 		loggerConfig := zap.NewProductionConfig()
-		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		//loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
 		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
 
