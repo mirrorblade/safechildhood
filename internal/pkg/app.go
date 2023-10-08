@@ -65,7 +65,6 @@ func New(configsPath []string) *App {
 
 	if app.config.Server.Debug {
 		loggerConfig := zap.NewDevelopmentConfig()
-		//loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
 		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
 
@@ -75,7 +74,6 @@ func New(configsPath []string) *App {
 		}
 	} else {
 		loggerConfig := zap.NewProductionConfig()
-		//loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.Output)
 		loggerConfig.ErrorOutputPaths = append(loggerConfig.OutputPaths, app.config.Logger.OutputErrors)
 
@@ -85,13 +83,14 @@ func New(configsPath []string) *App {
 		}
 	}
 
-	app.handler = handler.New(app.service, app.logger)
-
-	app.handler.Init(config.HandlerConfig{
-		Server: app.config.Server,
-		Map:    app.config.Map,
-		Form:   app.config.Form,
+	app.handler = handler.New(app.service, app.logger, config.HandlerConfig{
+		Server:     app.config.Server,
+		Map:        app.config.Map,
+		Complaints: app.config.Complaints,
+		Form:       app.config.Form,
 	})
+
+	app.handler.Init()
 
 	go app.autoUpdatePlaygroundsMap()
 

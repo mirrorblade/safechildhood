@@ -133,10 +133,10 @@ func (h *Handler) createComplaint(c *gin.Context) {
 	complaint.CreatedAt = time.Now()
 
 	if len(bodyComplaint.Photos) != 0 {
-		if len(bodyComplaint.Photos) > h.handlerConfig.Form.MaxPhotos {
+		if len(bodyComplaint.Photos) > h.maxPhotos {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    http.StatusBadRequest,
-				"message": domain.ErrTooManyPhotos.Error() + fmt.Sprintf(" (max photos count: %d)", h.handlerConfig.Form.MaxPhotos),
+				"message": domain.ErrTooManyPhotos.Error() + fmt.Sprintf(" (max photos count: %d)", h.maxPhotos),
 				"body":    nil,
 			})
 

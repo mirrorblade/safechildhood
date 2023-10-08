@@ -15,6 +15,7 @@ type (
 		Server      ServerConfig      `yaml:"server" required:"true"`
 		Map         MapConfig         `yaml:"map"`
 		Playgrounds PlaygroundsConfig `yaml:"playgrounds" required:"true"`
+		Complaints  ComplaintsConfig  `yaml:"complaints"`
 		GoogleDrive GoogleDriveConfig `yaml:"googleDrive" required:"true"`
 		Form        FormConfig        `yaml:"form"`
 		Logger      LoggerConfig      `yaml:"logger"`
@@ -42,22 +43,26 @@ type (
 
 	MapConfig struct {
 		Bounds struct {
-			SouthWest converter.Coordinates `yaml:"southWest"`
-			NorthEast converter.Coordinates `yaml:"northEast"`
-		} `yaml:"bounds"`
+			SouthWest converter.Coordinates `yaml:"southWest" json:"southWest"`
+			NorthEast converter.Coordinates `yaml:"northEast" json:"northEast"`
+		} `yaml:"bounds" json:"bounds"`
 
-		DefaultPosition converter.Coordinates `yaml:"defaultPosition"`
+		DefaultPosition converter.Coordinates `yaml:"defaultPosition" json:"defaultPosition"`
 
 		Zoom struct {
-			Default int `yaml:"default"`
-			Min     int `yaml:"min"`
-			Max     int `yaml:"max"`
-		} `yaml:"zoom"`
+			Default int `yaml:"default" json:"default"`
+			Min     int `yaml:"min" json:"min"`
+			Max     int `yaml:"max" json:"max"`
+		} `yaml:"zoom" json:"zoom"`
 	}
 
 	PlaygroundsConfig struct {
 		CriticalTimeLimit time.Duration `yaml:"criticalTimeLimit" default:"24h"`
 		PathToFile        string        `yaml:"pathToFile" required:"true"`
+	}
+
+	ComplaintsConfig struct {
+		MaxCountToOneIp int `yaml:"maxCountToOneIp" json:"maxCountToOneIp" default:"3"`
 	}
 
 	GoogleDriveConfig struct {

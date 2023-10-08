@@ -27,10 +27,13 @@ map:
 
 playgrounds:
   criticalTimeLimit: 168h  # 7 days
-  pathToFile: "./resources/playgrounds.csv"
+  pathToFile: ./resources/playgrounds.csv
+
+complaints:
+  maxCountToOneIp: 5
 
 googleDrive:
-  pathToGoogleServiceAccount: "./key.json"
+  pathToGoogleServiceAccount: ./key.json
 
 form:
   maxSize: 15mb
