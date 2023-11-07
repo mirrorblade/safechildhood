@@ -12,13 +12,7 @@ type Coordinates struct {
 }
 
 func CoordinatesToString(coordinates []float64) string {
-	var builder strings.Builder
-
-	builder.WriteString(fmt.Sprintf("%f", coordinates[0]))
-	builder.WriteString(",")
-	builder.WriteString(fmt.Sprintf("%f", coordinates[1]))
-
-	return builder.String()
+	return fmt.Sprintf("%f,%f", coordinates[0], coordinates[1])
 }
 
 func StringToCoordinates(str string) (Coordinates, error) {
