@@ -19,13 +19,14 @@ type PlaygroundsService struct {
 	playgroundsMap map[string]*MapProperties
 
 	changeColorTime time.Duration
-	refreshState    bool
+	refreshChannel  chan any
 }
 
 func NewPlaygroundsService(changeColorTime time.Duration) *PlaygroundsService {
 	return &PlaygroundsService{
 		changeColorTime: changeColorTime,
 		playgrounds:     &geojson.FeatureCollection{},
+		refreshChannel:  make(chan any),
 	}
 }
 
@@ -33,8 +34,8 @@ func (p *PlaygroundsService) GetPlaygrounds() *geojson.FeatureCollection {
 	return p.playgrounds
 }
 
-func (p *PlaygroundsService) CheckRefreshState() bool {
-	return p.refreshState
+func (p *PlaygroundsService) Refresh() chan any {
+	return p.refreshChannel
 }
 
 func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapProperties) {
@@ -45,6 +46,8 @@ func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapPro
 	}
 
 	p.updatePlaygrounds()
+
+	p.refreshChannel <- struct{}{}
 }
 
 func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties) {
@@ -62,12 +65,10 @@ func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*Map
 			continue
 		}
 
-		color := ""
+		color := "yellow"
 
 		if time.Since(properties.Time) > p.changeColorTime {
 			color = "red"
-		} else {
-			color = "yellow"
 		}
 
 		if v.Color != color {
@@ -80,11 +81,7 @@ func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*Map
 	if updateBool {
 		p.updatePlaygrounds()
 
-		p.refreshState = true
-
-		time.Sleep(1250 * time.Millisecond)
-
-		p.refreshState = false
+		p.refreshChannel <- struct{}{}
 	}
 }
 

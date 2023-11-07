@@ -5,7 +5,7 @@
 /bin
 /tmp
 /tools
-/log
 /key.json
+/log/*
 /*.go
 /*.spec

@@ -87,7 +87,7 @@ func init() {
 	}
 }
 
-func New(configsPath []string) *Config {
+func New(configsPath ...string) *Config {
 	c := new(Config)
 
 	if err := configor.Load(c, configsPath...); err != nil {

@@ -27,7 +27,7 @@ type App struct {
 	handler    *handler.Handler
 }
 
-func New(configsPath []string) *App {
+func New(configsPath string) *App {
 	app := new(App)
 
 	app.config = config.New(configsPath)

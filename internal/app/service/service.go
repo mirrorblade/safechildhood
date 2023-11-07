@@ -18,7 +18,7 @@ type Complaints interface {
 
 type Playgrounds interface {
 	GetPlaygrounds() *geojson.FeatureCollection
-	CheckRefreshState() bool
+	Refresh() chan any
 	SetPlaygroundsMap(playgroundsMap map[string]*MapProperties)
 	UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties)
 }

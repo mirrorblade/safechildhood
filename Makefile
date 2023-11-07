@@ -32,5 +32,5 @@ clean:
 	rm -r ./bin
 
 clean-docker:
-	docker stop ${NAME} && docker rm ${NAME}
+	docker stop ${NAME} && docker rm ${NAME} || true
 	docker rmi ${IMAGE_TAG}
