@@ -7,6 +7,8 @@ import (
 	geojson "github.com/paulmach/go.geojson"
 )
 
+type RefreshFunction func()
+
 type MapProperties struct {
 	ID      string    `json:"id"`
 	Color   string    `json:"color"`
@@ -25,7 +27,7 @@ type PlaygroundsService struct {
 func NewPlaygroundsService(changeColorTime time.Duration) *PlaygroundsService {
 	return &PlaygroundsService{
 		changeColorTime: changeColorTime,
-		playgrounds:     &geojson.FeatureCollection{},
+		playgrounds:     geojson.NewFeatureCollection(),
 		refreshChannel:  make(chan any),
 	}
 }
@@ -38,20 +40,24 @@ func (p *PlaygroundsService) Refresh() chan any {
 	return p.refreshChannel
 }
 
-func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapProperties) {
-	p.playgroundsMap = make(map[string]*MapProperties)
+func (p *PlaygroundsService) SetPlaygroundsMap(playgroundsMap map[string]*MapProperties) RefreshFunction {
+	newPlaygroundsMap := make(map[string]*MapProperties)
 
 	for k, v := range playgroundsMap {
-		p.playgroundsMap[k] = v
+		newPlaygroundsMap[k] = v
 	}
+
+	p.playgroundsMap = newPlaygroundsMap
 
 	p.updatePlaygrounds()
 
-	p.refreshChannel <- struct{}{}
+	return func() {
+		p.refreshChannel <- struct{}{}
+	}
 }
 
-func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties) {
-	updateBool := false
+func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*MapProperties) RefreshFunction {
+	update := false
 
 	for k, v := range p.playgroundsMap {
 		properties, ok := playgroundsMap[k]
@@ -59,7 +65,7 @@ func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*Map
 			if v.Color != "green" {
 				v.Color = "green"
 
-				updateBool = true
+				update = true
 			}
 
 			continue
@@ -74,19 +80,23 @@ func (p *PlaygroundsService) UpdatePlaygroundsMap(playgroundsMap map[string]*Map
 		if v.Color != color {
 			v.Color = color
 
-			updateBool = true
+			update = true
 		}
 	}
 
-	if updateBool {
+	if update {
 		p.updatePlaygrounds()
 
-		p.refreshChannel <- struct{}{}
+		return func() {
+			p.refreshChannel <- struct{}{}
+		}
 	}
+
+	return nil
 }
 
 func (p *PlaygroundsService) updatePlaygrounds() {
-	p.playgrounds = geojson.NewFeatureCollection()
+	playgrounds := geojson.NewFeatureCollection()
 
 	for stringCoordinates, props := range p.playgroundsMap {
 		coordinates, _ := converter.StringToCoordinates(stringCoordinates)
@@ -99,6 +109,8 @@ func (p *PlaygroundsService) updatePlaygrounds() {
 			"address": props.Address,
 		}
 
-		p.playgrounds.AddFeature(feature)
+		playgrounds.AddFeature(feature)
 	}
+
+	p.playgrounds = playgrounds
 }

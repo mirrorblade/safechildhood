@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const COMPLAINTS_TABLE_NAME = "complaints"
+
 type Complaints struct {
 	pool *pgxpool.Pool
 
@@ -20,57 +22,57 @@ type Complaints struct {
 func NewComplaints(pool *pgxpool.Pool) *Complaints {
 	return &Complaints{
 		pool:  pool,
-		table: "complaints",
+		table: COMPLAINTS_TABLE_NAME,
 	}
 }
-func (c *Complaints) GetEarly(ctx context.Context) ([]*domain.Complaint, error) {
+func (c *Complaints) GetEarly(ctx context.Context) (*[]domain.Complaint, error) {
 	startQuery := fmt.Sprintf(`SELECT DISTINCT ON (coordinates) *
 		 FROM %s ORDER BY coordinates, created_at ASC`, c.table)
 
 	rows, err := c.pool.Query(ctx, startQuery)
 	if err != nil {
-		return []*domain.Complaint{}, err
+		return &[]domain.Complaint{}, err
 	}
 
-	complaints, err := pgx.CollectRows(rows, pgx.RowToStructByName[*domain.Complaint])
+	complaints, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.Complaint])
 	if err != nil {
-		return []*domain.Complaint{}, err
+		return &[]domain.Complaint{}, err
 	}
 
-	return complaints, nil
+	return &complaints, nil
 }
 
-func (c *Complaints) Get(ctx context.Context, complaintId any) (domain.Complaint, error) {
+func (c *Complaints) Get(ctx context.Context, complaintId any) (*domain.Complaint, error) {
 	startQuery := fmt.Sprintf("SELECT * FROM %s WHERE id=$1", c.table)
 
 	row, err := c.pool.Query(ctx, startQuery, complaintId)
 	if err != nil {
-		return domain.Complaint{}, err
+		return &domain.Complaint{}, err
 	}
 
 	complaint, err := pgx.CollectOneRow(row, pgx.RowToStructByName[domain.Complaint])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Complaint{}, domain.ErrUserNotFound
+			return &domain.Complaint{}, domain.ErrUserNotFound
 		}
 
-		return domain.Complaint{}, err
+		return &domain.Complaint{}, err
 	}
 
 	formatedId, ok := complaint.ID.([16]byte)
 	if !ok {
-		return domain.Complaint{}, err
+		return &domain.Complaint{}, err
 	}
 
 	complaint.ID, err = uuid.FromBytes(formatedId[:])
 	if err != nil {
-		return domain.Complaint{}, err
+		return &domain.Complaint{}, err
 	}
 
-	return complaint, nil
+	return &complaint, nil
 }
 
-func (c *Complaints) Create(ctx context.Context, complaint domain.Complaint) error {
+func (c *Complaints) Create(ctx context.Context, complaint *domain.Complaint) error {
 	startQuery := fmt.Sprintf(`INSERT INTO %s (
 		id, 
 		coordinates, 

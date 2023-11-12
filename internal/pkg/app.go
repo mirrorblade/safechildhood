@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"safechildhood/internal/app/config"
@@ -27,10 +28,10 @@ type App struct {
 	handler    *handler.Handler
 }
 
-func New(configsPath string) *App {
+func New(configsPath ...string) *App {
 	app := new(App)
 
-	app.config = config.New(configsPath)
+	app.config = config.New(configsPath...)
 
 	pool, err := pgxpool.New(context.Background(), app.config.Database.Uri)
 	if err != nil {
@@ -83,14 +84,8 @@ func New(configsPath string) *App {
 		}
 	}
 
-	app.handler = handler.New(app.service, app.logger, config.HandlerConfig{
-		Server:     app.config.Server,
-		Map:        app.config.Map,
-		Complaints: app.config.Complaints,
-		Form:       app.config.Form,
-	})
-
-	app.handler.Init()
+	app.handler = handler.New(app.service, app.logger)
+	app.handler.Init(app.config)
 
 	go app.autoUpdatePlaygroundsMap()
 
@@ -98,18 +93,20 @@ func New(configsPath string) *App {
 }
 
 func (a *App) autoUpdatePlaygroundsMap() {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 
-	defer func(t *time.Ticker) {
+	defer func() {
 		ticker.Stop()
-	}(ticker)
+	}()
 
 	for range ticker.C {
 		complaints, err := a.service.GetEarly(context.Background())
 		if err != nil {
 			a.logger.Error(err.Error())
 		} else {
-			a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
+			if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints)); refreshFunction != nil {
+				go refreshFunction()
+			}
 		}
 	}
 }
@@ -138,7 +135,7 @@ func (a *App) initPlaygroundsMap(pathToResource string) error {
 
 			return err
 		}
-
+		fmt.Printf(`"%s",`, data[0])
 		playgroundsMap[data[0]] = &service.MapProperties{
 			ID:      data[2],
 			Color:   "green",
@@ -157,15 +154,17 @@ func (a *App) initPlaygroundsMap(pathToResource string) error {
 		return err
 	}
 
-	a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints))
+	if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints)); refreshFunction != nil {
+		go refreshFunction()
+	}
 
 	return nil
 }
 
-func (a *App) createPlaygroundsMapFromComplaints(complaints []*domain.Complaint) map[string]*service.MapProperties {
+func (a *App) createPlaygroundsMapFromComplaints(complaints *[]domain.Complaint) map[string]*service.MapProperties {
 	playgroundsMap := make(map[string]*service.MapProperties)
 
-	for _, complaint := range complaints {
+	for _, complaint := range *complaints {
 		playgroundsMap[complaint.Coordinates] = &service.MapProperties{
 			Time: complaint.CreatedAt,
 		}

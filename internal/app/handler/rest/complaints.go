@@ -19,12 +19,12 @@ import (
 
 var commonImageMimeTypes = []string{"image/avif", "image/bmp", "image/gif", "image/jpeg", "image/png", "image/tiff", "image/webp"}
 
-func (h *Handler) initComplaints() {
+func (h *Handler) initComplaints(api *gin.RouterGroup) {
 	basicAuth := gin.BasicAuth(gin.Accounts{
 		"admin": "123456789",
 	})
 
-	complaint := h.router.Group("/complaints")
+	complaint := api.Group("/complaints")
 	{
 		complaint.GET("/:id", basicAuth, h.getComplaint)
 		complaint.POST("/", h.createComplaint)
@@ -224,7 +224,7 @@ func (h *Handler) createComplaint(c *gin.Context) {
 		complaint.PhotosPath = fmt.Sprintf("/%s/%s", bodyComplaint.Coordinates, id)
 	}
 
-	if err := h.service.Complaints.Create(c.Request.Context(), *complaint); err != nil {
+	if err := h.service.Complaints.Create(c.Request.Context(), complaint); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
 			"message": "server error",

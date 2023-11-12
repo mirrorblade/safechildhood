@@ -2,28 +2,26 @@ package sse
 
 import (
 	"safechildhood/internal/app/service"
+	"safechildhood/pkg/sse"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	router *gin.Engine
-
-	server *Server
+	server *sse.Server[string]
 
 	service *service.Service
 }
 
-func New(router *gin.Engine, service *service.Service) *Handler {
+func New(service *service.Service) *Handler {
 	return &Handler{
-		router:  router,
-		server:  NewServer(),
+		server:  sse.NewServer[string](),
 		service: service,
 	}
 }
 
-func (h *Handler) Init() {
+func (h *Handler) Init(sse *gin.RouterGroup) {
 	go h.server.Listen()
 
-	h.initPlaygroundsSSE()
+	h.initPlaygrounds(sse)
 }

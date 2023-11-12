@@ -16,15 +16,15 @@ func NewComplaintsService(repo repository.Complaints) *ComplaintsService {
 	}
 }
 
-func (c *ComplaintsService) GetEarly(ctx context.Context) ([]*domain.Complaint, error) {
+func (c *ComplaintsService) GetEarly(ctx context.Context) (*[]domain.Complaint, error) {
 	return c.repo.GetEarly(ctx)
 }
 
-func (c *ComplaintsService) Get(ctx context.Context, complaintId any) (domain.Complaint, error) {
+func (c *ComplaintsService) Get(ctx context.Context, complaintId any) (*domain.Complaint, error) {
 	return c.repo.Get(ctx, complaintId)
 }
 
-func (c *ComplaintsService) Create(ctx context.Context, complaint domain.Complaint) error {
+func (c *ComplaintsService) Create(ctx context.Context, complaint *domain.Complaint) error {
 	return c.repo.Create(ctx, complaint)
 }
 

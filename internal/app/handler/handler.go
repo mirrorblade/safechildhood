@@ -15,61 +15,71 @@ import (
 )
 
 type Handler struct {
-	router  *gin.Engine
+	router *gin.Engine
+
 	service *service.Service
 	logger  *zap.Logger
-
-	handlerConfig config.HandlerConfig
 }
 
-func New(service *service.Service, logger *zap.Logger, handlerConfig config.HandlerConfig) *Handler {
+func New(service *service.Service, logger *zap.Logger) *Handler {
 	return &Handler{
-		service:       service,
-		logger:        logger,
-		handlerConfig: handlerConfig,
+		service: service,
+		logger:  logger,
 	}
 }
 
-func (h *Handler) Init() {
+func (h *Handler) Init(config *config.Config) {
 	mode := gin.ReleaseMode
-	if h.handlerConfig.Server.Debug {
+	if config.Server.Debug {
 		mode = gin.DebugMode
 	}
 
 	gin.SetMode(mode)
 
 	h.router = gin.New()
-	h.router.MaxMultipartMemory = int64(h.handlerConfig.Form.MaxSize.Bytes())
+	h.router.MaxMultipartMemory = int64(config.Form.MaxSize.Bytes())
 
 	h.router.Use(ginzap.Ginzap(h.logger, time.RFC3339, true))
 
 	h.router.Use(cors.New(cors.Config{
-		AllowOrigins:     h.handlerConfig.Server.Cors.AllowOrigins,
-		AllowMethods:     h.handlerConfig.Server.Cors.AllowMethods,
-		AllowHeaders:     h.handlerConfig.Server.Cors.AllowHeaders,
-		AllowCredentials: h.handlerConfig.Server.Cors.AllowCredentials,
-		ExposeHeaders:    h.handlerConfig.Server.Cors.ExposeHeaders,
-		MaxAge:           h.handlerConfig.Server.Cors.MaxAge,
+		AllowOrigins:     config.Server.Cors.AllowOrigins,
+		AllowMethods:     config.Server.Cors.AllowMethods,
+		AllowHeaders:     config.Server.Cors.AllowHeaders,
+		AllowCredentials: config.Server.Cors.AllowCredentials,
+		ExposeHeaders:    config.Server.Cors.ExposeHeaders,
+		MaxAge:           config.Server.Cors.MaxAge,
 	}))
 
-	h.initConfig()
+	h.initConfig(config)
+	h.initRest(config)
+	h.initSSE(config)
 
-	hRest := rest.New(h.router, h.service, h.handlerConfig.Form.MaxPhotos)
-	hRest.Init()
-
-	hSSE := sse.New(h.router, h.service)
-	hSSE.Init()
 }
 
 func (h *Handler) Run(address string) error {
 	return h.router.Run(address)
 }
 
-func (h *Handler) initConfig() {
+func (h *Handler) initRest(config *config.Config) {
+	hRest := rest.New(h.service, config.Form.MaxPhotos)
+	gRest := h.router.Group("/api")
+	{
+		hRest.Init(gRest)
+	}
+}
+
+func (h *Handler) initSSE(config *config.Config) {
+	hSSE := sse.New(h.service)
+	gSSE := h.router.Group("/sse", sse.HeadersMiddleware())
+	{
+		hSSE.Init(gSSE)
+	}
+}
+
+func (h *Handler) initConfig(config *config.Config) {
 	h.router.GET("/config", func(c *gin.Context) {
 		c.JSON(http.StatusOK, map[string]any{
-			"map":        h.handlerConfig.Map,
-			"complaints": h.handlerConfig.Complaints,
+			"map": config.Map,
 		})
 	})
 }

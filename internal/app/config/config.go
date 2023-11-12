@@ -15,7 +15,6 @@ type (
 		Server      ServerConfig      `yaml:"server" required:"true"`
 		Map         MapConfig         `yaml:"map"`
 		Playgrounds PlaygroundsConfig `yaml:"playgrounds" required:"true"`
-		Complaints  ComplaintsConfig  `yaml:"complaints"`
 		GoogleDrive GoogleDriveConfig `yaml:"googleDrive" required:"true"`
 		Form        FormConfig        `yaml:"form"`
 		Logger      LoggerConfig      `yaml:"logger"`
@@ -61,10 +60,6 @@ type (
 		PathToFile        string        `yaml:"pathToFile" required:"true"`
 	}
 
-	ComplaintsConfig struct {
-		MaxCountToOneIp int `yaml:"maxCountToOneIp" json:"maxCountToOneIp" default:"3"`
-	}
-
 	GoogleDriveConfig struct {
 		PathToGoogleServiceAccout string `yaml:"pathToGoogleServiceAccount" required:"true"`
 		MediaFolderId             string `env:"MEDIA_FOLDER_ID" required:"true"`
@@ -83,7 +78,7 @@ type (
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		panic("no .env file found")
+		panic(err)
 	}
 }
 

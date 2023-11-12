@@ -29,9 +29,6 @@ playgrounds:
   criticalTimeLimit: 168h  # 7 days
   pathToFile: ./resources/playgrounds.csv
 
-complaints:
-  maxCountToOneIp: 5
-
 googleDrive:
   pathToGoogleServiceAccount: ./key.json
 

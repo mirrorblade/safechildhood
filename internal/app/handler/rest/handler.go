@@ -8,7 +8,6 @@ import (
 )
 
 type Handler struct {
-	router  *gin.Engine
 	service *service.Service
 
 	maxPhotos int
@@ -16,15 +15,14 @@ type Handler struct {
 	textSanitazer *bluemonday.Policy
 }
 
-func New(router *gin.Engine, service *service.Service, maxPhotos int) *Handler {
+func New(service *service.Service, maxPhotos int) *Handler {
 	return &Handler{
-		router:        router,
 		service:       service,
 		maxPhotos:     maxPhotos,
 		textSanitazer: bluemonday.StrictPolicy(),
 	}
 }
 
-func (h *Handler) Init() {
-	h.initComplaints()
+func (h *Handler) Init(api *gin.RouterGroup) {
+	h.initComplaints(api)
 }
