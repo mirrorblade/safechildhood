@@ -104,7 +104,9 @@ func (a *App) autoUpdatePlaygroundsMap() {
 		if err != nil {
 			a.logger.Error(err.Error())
 		} else {
-			if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints)); refreshFunction != nil {
+			if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(
+				a.createPlaygroundsMapFromComplaints(complaints),
+			); refreshFunction != nil {
 				go refreshFunction()
 			}
 		}
@@ -154,7 +156,9 @@ func (a *App) initPlaygroundsMap(pathToResource string) error {
 		return err
 	}
 
-	if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(a.createPlaygroundsMapFromComplaints(complaints)); refreshFunction != nil {
+	if refreshFunction := a.service.Playgrounds.UpdatePlaygroundsMap(
+		a.createPlaygroundsMapFromComplaints(complaints),
+	); refreshFunction != nil {
 		go refreshFunction()
 	}
 
